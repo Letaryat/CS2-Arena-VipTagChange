@@ -4,10 +4,16 @@ using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Admin;
+using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
 using K4ArenaSharedApi;
 using TagsApi;
+using MenuManager;
+using CounterStrikeSharp.API.Core.Translations;
+
+
 
 namespace Arena_VipTagChange;
 
@@ -22,6 +28,33 @@ public class Arena_VipTagChange : BasePlugin
     public (bool ArenaFound, bool Checked) ArenaSupport = (false, false);
     public static PluginCapability<ITagApi> Capability_TagsApi = new("tags:api");
     public static ITagApi? SharedApi_Tag { get; private set; }
+    private IMenuApi? _api;
+    private readonly PluginCapability<IMenuApi?> _pluginCapability = new("menu:nfcore");    
+
+    List<string> Colors = [
+        "Default",
+        "White",
+        "Forteam",
+        "DarkRed",
+        "Green",
+        "LightYellow",
+        "LightBlue",
+        "Olive",
+        "Lime",
+        "Red",
+        "LightPurple",
+        "Purple",
+        "Grey",
+        "Yellow",
+        "Gold",
+        "Silver",
+        "Blue",
+        "DarkBlue",
+        "BlueGrey",
+        "Magenta",
+        "LightRed",
+        "Orange"
+    ];
     public override void Load(bool hotReload)
     {
         Logger.LogInformation("Arena_VipTagChange - Loaded");
@@ -36,6 +69,13 @@ public class Arena_VipTagChange : BasePlugin
     {
         Logger.LogInformation("Arena_VipTagChange - Unloaded");
     }
+
+    public override void OnAllPluginsLoaded(bool hotReload)
+    {
+        _api = _pluginCapability.Get();
+        if (_api == null) Console.WriteLine("MenuManager Core not found...");
+    }
+
 
     public string? GetPlayerArenaTag(CCSPlayerController controller)
     {
@@ -83,5 +123,49 @@ public class Arena_VipTagChange : BasePlugin
         SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $"[{arg}]");
         SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.NameColor, "{Blue}");
         SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.ChatColor, "{DarkRed}");
+
     }
+
+    [ConsoleCommand("css_menu", "Ability for VIP to change their Scoreboard and Chat tag")]
+    public void TestMenu(CCSPlayerController? player, CommandInfo commandInfo)
+    {
+        if(player == null){ return; }
+        var menu = _api?.NewMenu("Test");
+        menu?.AddMenuOption($"Toggle Tag - {SharedApi_Tag?.GetPlayerToggleTags(player)}", (player, option) => {
+            SharedApi_Tag?.SetPlayerToggleTags(player, !SharedApi_Tag.GetPlayerToggleTags(player));
+            CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
+        });
+        menu?.AddMenuOption("Tag Color", (player, option) => {
+            NoweMenu(player);
+            CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
+        });
+        menu?.AddMenuOption("Chat Color", (player, option) => {
+            NoweMenu(player);
+            CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
+        });
+        menu?.AddMenuOption("Name Color", (player, option) => {
+            NoweMenu(player);
+            CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
+        });
+        menu?.Open(player);
+    }
+
+    public void NoweMenu(CCSPlayerController? player)
+    {
+        if(player == null){ return; }
+        var menu = _api?.NewMenu("Test drugie menu");
+
+        foreach(var chatcolors in Colors)
+        {
+            menu?.AddMenuOption($"{chatcolors}", (player, option) => {
+                SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.ChatColor, $"{{{chatcolors}}}");
+                CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
+                string message = $"Your new color: {{{chatcolors}}}{chatcolors}";
+                message.ReplaceColorTags();
+                player.PrintToChat($"{message.ReplaceColorTags()}");
+            });
+        }
+        menu?.Open(player);
+    }
+
 }
