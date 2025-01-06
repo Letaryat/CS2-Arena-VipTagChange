@@ -34,7 +34,6 @@ public class Arena_VipTagChange : BasePlugin
     List<string> Colors = [
         "Default",
         "White",
-        "Forteam",
         "DarkRed",
         "Green",
         "LightYellow",
@@ -161,7 +160,6 @@ public class Arena_VipTagChange : BasePlugin
                 SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.ChatColor, $"{{{chatcolors}}}");
                 CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
                 string message = $"Your new color: {{{chatcolors}}}{chatcolors}";
-                message.ReplaceColorTags();
                 player.PrintToChat($"{message.ReplaceColorTags()}");
             });
         }
