@@ -85,6 +85,7 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
         }
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnect);
+        RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorized);
     }
     public override void Unload(bool hotReload)
@@ -444,6 +445,16 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
         SharedApi_Tag?.SetPlayerColor(player!, Tags.Tags_Colors.NameColor, $"{{{Players[steamid64]!.namecolor}}}");
         */
         Logger.LogInformation($"Connected {steamid64}");
+        return HookResult.Continue;
+    }
+
+    public HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if(player == null || player.IsBot || player.IsHLTV) return HookResult.Continue;
+        var steamid64 = player.AuthorizedSteamID!.SteamId64;
+        if(!Players.ContainsKey(steamid64)) return HookResult.Continue;
+        Players.Remove(steamid64, out var _);
         return HookResult.Continue;
     }
 
