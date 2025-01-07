@@ -49,6 +49,7 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
     //private MySqlConnection? _connection;
     public TagConfig Config { get; set; }
 
+    public readonly Dictionary<ulong, Player?> Players = new();
     public string DbConnection = string.Empty;
 
     List<string> Colors = [
@@ -83,6 +84,8 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
             SharedApi_Tag = Capability_TagApi.Get();
         }
         RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
+        RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnect);
+        RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorized);
     }
     public override void Unload(bool hotReload)
     {
@@ -281,14 +284,23 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
         var arg = commandInfo.GetArg(1);
         var test = GetITag(player!);
         var newtag = $"{ArenaName} | {arg} ";
-        if (player == null)
+        if (player == null || !Players.ContainsKey(player.AuthorizedSteamID!.SteamId64))
         {
             Server.PrintToChatAll("player null");
         }
-        Server.PrintToChatAll($"{player!.PlayerName} - {ArenaName} - new tag: {arg} - Api: {test} | Steamid: {player.AuthorizedSteamID.SteamId64}");
-        SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ScoreTag, newtag);
-        SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $" {arg} ");
-        await AddTag(player, arg);
+        try
+        {
+            Server.PrintToChatAll($"{player!.PlayerName} - {ArenaName} - new tag: {arg} - Api: {test} | Steamid: {player.AuthorizedSteamID!.SteamId64}");
+            SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ScoreTag, newtag);
+            SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $"{{{Players[player.AuthorizedSteamID.SteamId64]!.tagcolor}}}{arg} ");
+            Players[player.AuthorizedSteamID.SteamId64]!.tag = arg;
+            await AddTag(player, arg);
+        }
+        catch(Exception ex)
+        {
+            Logger.LogInformation($"TagChange: {ex}");
+        }
+
         //SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.NameColor, "{Blue}");
         //SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.ChatColor, "{DarkRed}");
 
@@ -347,19 +359,22 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
                 {
                     case 1:
                         string? playertag = SharedApi_Tag?.GetPlayerTag(player, Tags.Tags_Tags.ScoreTag);
-                        var splittedTag = playertag!.Split("ARENA")[0];
-                        SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $"{{{chatcolors}}}{splittedTag}");
+                        //var splittedTag = playertag!.Split("ARENA")[0];
+                        SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $"{{{chatcolors}}}{Players[player.AuthorizedSteamID!.SteamId64]!.tag} ");
                         player.PrintToChat($"Your new tag color:{{{chatcolors}}}{chatcolors}".ReplaceColorTags());
+                        Players[player.AuthorizedSteamID!.SteamId64]!.tagcolor = chatcolors;
                         await ChangeColor(player, chatcolors, 1);
                         break;
                     case 2:
                         SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.ChatColor, $"{{{chatcolors}}}");
                         player.PrintToChat($"Your new chat color:{{{chatcolors}}}{chatcolors}".ReplaceColorTags());
+                        Players[player.AuthorizedSteamID!.SteamId64]!.chatcolor = chatcolors;
                         await ChangeColor(player, chatcolors, 2);
                         break;
                     case 3:
                         SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.NameColor, $"{{{chatcolors}}}");
                         player.PrintToChat($"Your new name color:{{{chatcolors}}}{chatcolors}".ReplaceColorTags());
+                        Players[player.AuthorizedSteamID!.SteamId64]!.namecolor = chatcolors;
                         await ChangeColor(player, chatcolors, 3);
                         break;
                 }
@@ -372,10 +387,71 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
         menu?.Open(player);
     }
 
+    private void OnClientAuthorized(int slot, SteamID id)
+    {
+        var player = Utilities.GetPlayerFromSlot(slot);
+        if(player == null || player.IsBot || player.IsHLTV) return;
+        var steamid64 = player!.AuthorizedSteamID!.SteamId64;
+
+        Task.Run(async () =>
+        {
+            await OnClientAuthorizedAsync(steamid64);
+        });
+    }
+
+    private async Task OnClientAuthorizedAsync(ulong steamid)
+    {
+        var userexist = await UserExist(steamid);
+        if(!userexist) return;
+        var user = await FetchPlayerInfo(steamid);
+        if(user == null) return;
+
+        Players[steamid] = new Player
+            {
+                steamid = user!.steamid,
+                tag = user.tag,
+                tagcolor = user.tagcolor,
+                namecolor = user.namecolor,
+                chatcolor = user.chatcolor
+            };
+    }
+
     public HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
     {
-
+        var player = @event.Userid;
+        if(player == null || player.IsBot || player.IsHLTV) return HookResult.Continue;
+        var steamid64 = player!.AuthorizedSteamID!.SteamId64;
+        var ArenaName = GetPlayerArenaTag(player!);
+        var VipTag = $" {ArenaName} | {Players[steamid64]!.tag}";
+        //SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $"{{{chatcolors}}}{splittedTag}");
+        SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ScoreTag, VipTag);
+        SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ChatTag, $"{{{Players[steamid64]!.tagcolor}}}{Players[steamid64]!.tag} ");
+        SharedApi_Tag?.SetPlayerColor(player!, Tags.Tags_Colors.ChatColor, $"{{{Players[steamid64]!.chatcolor}}}");
+        SharedApi_Tag?.SetPlayerColor(player!, Tags.Tags_Colors.NameColor, $"{{{Players[steamid64]!.namecolor}}}");
+        
         return HookResult.Continue;
+    }
+
+    public HookResult OnPlayerConnect(EventPlayerConnectFull @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if(player == null || player.IsBot || player.IsHLTV) return HookResult.Continue;
+        var steamid64 = player!.AuthorizedSteamID!.SteamId64;
+        /*
+        SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ScoreTag, Players[steamid64]!.tag);
+        SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ChatTag, Players[steamid64]!.tag);
+        SharedApi_Tag?.SetPlayerColor(player!, Tags.Tags_Colors.ChatColor, $"{{{Players[steamid64]!.chatcolor}}}");
+        SharedApi_Tag?.SetPlayerColor(player!, Tags.Tags_Colors.NameColor, $"{{{Players[steamid64]!.namecolor}}}");
+        */
+        Logger.LogInformation($"Connected {steamid64}");
+        return HookResult.Continue;
+    }
+
+    [ConsoleCommand("css_tescik", "Ability for VIP to change their Scoreboard and Chat tag")]
+    public async void TestCMD(CCSPlayerController? player, CommandInfo commandInfo)
+    {
+        var steamid = player!.AuthorizedSteamID!.SteamId64;
+        Server.PrintToChatAll($"ID: {Players[steamid]!.chatcolor}");
     }
 
     public async Task<Player?> FetchPlayerInfo(ulong SteamID)
@@ -391,7 +467,7 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
                 return null;
             }
             await connection.OpenAsync();
-            string sqlSelect = $"SELECT * FROM `Vip_TagChange WHERE `SteamID` = @SteamID";
+            string sqlSelect = $"SELECT * FROM `VipTags_Players` WHERE `SteamID` = {SteamID}";
             var user = await connection.QueryFirstOrDefaultAsync<Player>(sqlSelect);
             return user;
         }
@@ -406,9 +482,9 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
     {
         public required ulong steamid { get; set; }
         public required string tag { get; set; }
-        public string tagcolor { get; set; }
-        public string namecolor { get; set; }
-        public string chatcolor { get; set; }
+        public string? tagcolor { get; set; }
+        public string? namecolor { get; set; }
+        public string? chatcolor { get; set; }
     }
 
 }
