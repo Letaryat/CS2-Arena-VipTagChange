@@ -356,7 +356,7 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
                 tagcolor = user.tagcolor ?? "Default",
                 namecolor = user.namecolor ?? "Default",
                 chatcolor = user.chatcolor ?? "Default",
-                visibility = true
+                visibility = user.visibility ?? false
             };
     }
 }

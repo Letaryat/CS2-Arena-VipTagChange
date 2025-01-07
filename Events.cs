@@ -18,6 +18,7 @@ public partial class Arena_VipTagChange
             if(!Players.ContainsKey(steamid64)) return HookResult.Continue;
             var ArenaName = GetPlayerArenaTag(player!);
             var VipTag = $" {ArenaName} | {Players[steamid64]!.tag}";
+            if(Players[steamid64]!.visibility == false) { return HookResult.Continue;}
             //SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $"{{{chatcolors}}}{splittedTag}");
             SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ScoreTag, VipTag);
             SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ChatTag, $"{{{Players[steamid64]!.tagcolor}}}{Players[steamid64]!.tag} ");
@@ -40,6 +41,7 @@ public partial class Arena_VipTagChange
             if(player == null || player.IsBot || player.IsHLTV) return HookResult.Continue;
             var steamid64 = player!.AuthorizedSteamID!.SteamId64;
             if(!Players.ContainsKey(steamid64)) return HookResult.Continue;
+            if(Players[steamid64]!.visibility == false) { return HookResult.Continue;}
             SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ScoreTag, Players[steamid64]!.tag);
             SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ChatTag, Players[steamid64]!.tag);
             SharedApi_Tag?.SetPlayerColor(player!, Tags.Tags_Colors.ChatColor, $"{{{Players[steamid64]!.chatcolor}}}");
