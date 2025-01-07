@@ -57,6 +57,11 @@ public partial class Arena_VipTagChange
     public void TestMenu(CCSPlayerController? player, CommandInfo commandInfo)
     {
         if (player == null) { return; }
+        if(!Players.ContainsKey(player.AuthorizedSteamID!.SteamId64))
+        {
+            player.PrintToChat($"{Localizer["Prefix"]}{Localizer["SetupTag"]}");
+            return;
+        }
         var menu = _api?.NewMenu(Localizer["VipMenu"]);
         menu?.AddMenuOption($"{Localizer["ToggleTag"]} - {SharedApi_Tag?.GetPlayerToggleTags(player)}", (player, option) =>
         {
