@@ -353,9 +353,9 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
             {
                 steamid = user!.steamid,
                 tag = user.tag ?? "[VIP]",
-                tagcolor = user.tagcolor ?? "Default",
-                namecolor = user.namecolor ?? "Default",
-                chatcolor = user.chatcolor ?? "Default",
+                tagcolor = user.tagcolor,
+                namecolor = user.namecolor,
+                chatcolor = user.chatcolor,
                 visibility = user.visibility ?? false
             };
     }

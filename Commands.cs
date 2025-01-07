@@ -32,9 +32,9 @@ public partial class Arena_VipTagChange
                 {
                     steamid = player.AuthorizedSteamID.SteamId64,
                     tag = arg,
-                    tagcolor = "Default",
-                    namecolor = "Default",
-                    chatcolor = "Default",
+                    tagcolor = null,
+                    namecolor = null,
+                    chatcolor = null,
                     visibility = true
                 };
             }
