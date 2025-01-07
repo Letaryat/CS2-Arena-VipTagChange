@@ -111,6 +111,7 @@ public class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
         {
             Server = Config.DBHost,
             UserID = Config.DBUsername,
+            Port = Config.DBPort,
             Password = Config.DBPassword,
             Database = Config.DBName,
         };
