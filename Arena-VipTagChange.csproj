@@ -24,4 +24,9 @@
 	<ItemGroup>
 		<ProjectReference Include="../libs/TagsApi/TagsApi.csproj" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Dapper" Version="2.1.35" />
+	  <PackageReference Include="MySqlConnector" Version="2.4.0" />
+	</ItemGroup>
 </Project>
