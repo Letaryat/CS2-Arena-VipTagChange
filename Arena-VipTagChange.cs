@@ -27,7 +27,7 @@ public class TagConfig : BasePluginConfig
 public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
 {
     public override string ModuleName => "Arena_VipTagChange";
-    public override string ModuleVersion => "0.0.1";
+    public override string ModuleVersion => "0.0.6";
     public override string ModuleAuthor => "Letaryat";
     public override string ModuleDescription => "Tag change for servers using K4-Arenas";
     public static PluginCapability<IK4ArenaSharedApi> Capability_SharedAPI { get; } = new("k4-arenas:sharedapi");
