@@ -1,7 +1,6 @@
 ﻿using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Core.Translations;
-using CounterStrikeSharp.API.Modules.Admin;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using K4ArenaSharedApi;
@@ -418,8 +417,10 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
 
     public async Task OnClientAuthorizedAsync(ulong steamid)
     {
+        /*
         var userexist = await UserExist(steamid);
         if (!userexist) return;
+        */
         var user = await FetchPlayerInfo(steamid);
         if (user == null) return;
 

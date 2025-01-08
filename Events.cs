@@ -1,10 +1,7 @@
-using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using TagsApi;
 using Microsoft.Extensions.Logging;
-using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Admin;
-using CounterStrikeSharp.API.Core.Translations;
 
 namespace Arena_VipTagChange;
 
@@ -46,7 +43,7 @@ public partial class Arena_VipTagChange
             }
             else
             {
-                SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ChatTag, $"{Players[steamid64]!.tagcolor}{Players[steamid64]!.tag} ".ReplaceColorTags());
+                SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ChatTag, $"{{{Players[steamid64]!.tagcolor}}}{Players[steamid64]!.tag} ");
             }
         }
         catch (Exception ex)

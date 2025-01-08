@@ -1,11 +1,9 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Core.Translations;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using TagsApi;
 using Microsoft.Extensions.Logging;
-using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Admin;
 namespace Arena_VipTagChange;
 
@@ -46,7 +44,14 @@ public partial class Arena_VipTagChange
             }
 
             SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ScoreTag, newtag);
-            SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $"{{{Players[player.AuthorizedSteamID!.SteamId64]!.tagcolor}}}{arg} ");
+            if (Players[player.AuthorizedSteamID.SteamId64]!.tagcolor == null)
+            {
+                SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ChatTag, $"{Players[player.AuthorizedSteamID.SteamId64]!.tag} ");
+            }
+            else
+            {
+                SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $"{{{Players[player.AuthorizedSteamID!.SteamId64]!.tagcolor}}}{arg} ");
+            }
             player.PrintToChat($"{Localizer["Prefix"]}{Localizer["TagSet", arg]}");
             //await AddTag(player, arg);
         }
@@ -81,10 +86,12 @@ public partial class Arena_VipTagChange
             if (Players[player.AuthorizedSteamID!.SteamId64]!.visibility == false)
             {
                 Players[player.AuthorizedSteamID!.SteamId64]!.visibility = true;
+                player.PrintToChat($"{Localizer["Prefix"]}{Localizer["Toggled"]}");
             }
             else
             {
                 Players[player.AuthorizedSteamID!.SteamId64]!.visibility = false;
+                player.PrintToChat($"{Localizer["Prefix"]}{Localizer["UnToggled"]}");
             }
             CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
         });

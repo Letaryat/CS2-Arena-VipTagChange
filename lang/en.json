@@ -8,5 +8,8 @@
     "NewChatColor": "Your new chat color is: {0}",
     "NewNameColor": "Your new name color is {0}",
     "TagSet": "Your tag has been updated: {0}",
-    "SetupTag": "You need to setup tag first!"
+    "SetupTag": "You need to setup tag first!",
+    "NoPermissions": "You dont have permissions to set custom tag!",
+    "Toggled": "Vip tag is now visible!",
+    "UnToggled": "Vip tag is no longer visible!"
 }
