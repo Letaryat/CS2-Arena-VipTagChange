@@ -371,7 +371,7 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
                         //await ChangeColor(player, chatcolors, 3);
                         break;
                 }
-                CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
+                //CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
             });
         }
         menu?.Open(player);

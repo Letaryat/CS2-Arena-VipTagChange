@@ -93,22 +93,18 @@ public partial class Arena_VipTagChange
                 Players[player.AuthorizedSteamID!.SteamId64]!.visibility = false;
                 player.PrintToChat($"{Localizer["Prefix"]}{Localizer["UnToggled"]}");
             }
-            CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
         });
         menu?.AddMenuOption(Localizer["TagColorMenu"], (player, option) =>
         {
             CreateMenu(player, 1);
-            CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
         });
         menu?.AddMenuOption(Localizer["ChatColorMenu"], (player, option) =>
         {
             CreateMenu(player, 2);
-            CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
         });
         menu?.AddMenuOption(Localizer["NameColorMenu"], (player, option) =>
         {
             CreateMenu(player, 3);
-            CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
         });
         menu?.Open(player);
     }
