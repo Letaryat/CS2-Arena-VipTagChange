@@ -1,5 +1,5 @@
 # Arena-VipTagChange
-This plugin allows to someone with specific permission to set up their own scoreboard tag, chat tag and colors. It is created to work with [K4-Arenas](https://github.com/K4ryuu/K4-Arenas). This plugin uses MySQL database to store information about tags. First C# project that uses MySQL database so be aware that there might be some issues, if so please create a issue on github.
+This plugin allows to someone with specific permission to set up their own scoreboard tag, chat tag and colors. It is created to work with [K4-Arenas](https://github.com/K4ryuu/K4-Arenas). This plugin uses MySQL database to store information about tags. First C# project that uses MySQL database so be aware that there might be some issues, if so please create a issue on github. For now there is a lot of comments with unnecessary code in project since it is 0.0.6 version and I have no idea if that might come handy in future.
 
 ## [📌] Dependiencies:
 - [CounterStrikeSharp (tested on v294)](https://github.com/roflmuffin/CounterStrikeSharp)  
