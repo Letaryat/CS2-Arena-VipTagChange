@@ -44,7 +44,7 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
 
     List<string> Colors =
         [
-        "Default"," White", "DarkRed", "Green", "LightYellow", "LightBlue"," Olive", "Lime", "Red", "LightPurple", "Purple", "Grey"," Yellow", "Gold", "Silver", "Blue","DarkBlue", "BlueGrey", "Magenta", "LightRed", "Orange"
+        "Default", "White", "DarkRed", "Green", "LightYellow", "LightBlue", "Olive", "Lime", "Red", "LightPurple", "Purple", "Grey", "Yellow", "Gold", "Silver", "Blue","DarkBlue", "BlueGrey", "Magenta", "LightRed", "Orange"
         ];
     public override void Load(bool hotReload)
     {
