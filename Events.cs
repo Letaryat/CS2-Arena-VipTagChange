@@ -3,6 +3,8 @@ using CounterStrikeSharp.API.Core;
 using TagsApi;
 using Microsoft.Extensions.Logging;
 using CounterStrikeSharp.API.Modules.Entities;
+using CounterStrikeSharp.API.Modules.Admin;
+using CounterStrikeSharp.API.Core.Translations;
 
 namespace Arena_VipTagChange;
 
@@ -16,6 +18,7 @@ public partial class Arena_VipTagChange
             if (player == null || player.IsBot || player.IsHLTV) return HookResult.Continue;
             var steamid64 = player!.AuthorizedSteamID!.SteamId64;
             if (!Players.ContainsKey(steamid64)) return HookResult.Continue;
+            if (!AdminManager.PlayerHasPermissions(player, Config.VipFlag)) return HookResult.Continue;
             var ArenaName = GetPlayerArenaTag(player!);
             var VipTag = $" {ArenaName} | {Players[steamid64]!.tag}";
             if (Players[steamid64]!.visibility == false) { return HookResult.Continue; }
@@ -43,11 +46,8 @@ public partial class Arena_VipTagChange
             }
             else
             {
-                SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ChatTag, $"{{{Players[steamid64]!.tagcolor}}}{Players[steamid64]!.tag} ");
+                SharedApi_Tag?.SetPlayerTag(player!, Tags.Tags_Tags.ChatTag, $"{Players[steamid64]!.tagcolor}{Players[steamid64]!.tag} ".ReplaceColorTags());
             }
-
-
-
         }
         catch (Exception ex)
         {
@@ -61,6 +61,21 @@ public partial class Arena_VipTagChange
     {
         try
         {
+            var player = @event.Userid;
+            if (player == null || player.IsBot || player.IsHLTV) return HookResult.Continue;
+            var steamid64 = player!.AuthorizedSteamID!.SteamId64;
+            if (!AdminManager.PlayerHasPermissions(player, Config.VipFlag)) return HookResult.Continue;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await OnClientAuthorizedAsync(steamid64);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogInformation($"{ex}");
+                }
+            });
             /*
             var player = @event.Userid;
             if(player == null || player.IsBot || player.IsHLTV) return HookResult.Continue;
@@ -91,7 +106,23 @@ public partial class Arena_VipTagChange
             if (player == null || player.IsBot || player.IsHLTV) return HookResult.Continue;
             var steamid64 = player!.AuthorizedSteamID!.SteamId64;
             if (!Players.ContainsKey(steamid64)) return HookResult.Continue;
-            Players.Remove(steamid64, out var _);
+            if (!AdminManager.PlayerHasPermissions(player, Config.VipFlag)) return HookResult.Continue;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    Logger.LogInformation("Saving player into db");
+                    await SaveTags(steamid64);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogInformation($"{ex}");
+                }
+                finally
+                {
+                    Players.Remove(steamid64, out var _);
+                }
+            });
         }
         catch (Exception ex)
         {

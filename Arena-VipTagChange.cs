@@ -1,6 +1,7 @@
 ﻿using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Core.Translations;
+using CounterStrikeSharp.API.Modules.Admin;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using K4ArenaSharedApi;
@@ -9,6 +10,7 @@ using MenuManager;
 using MySqlConnector;
 using Dapper;
 using CounterStrikeSharp.API.Modules.Entities;
+using System.Collections.Concurrent;
 
 namespace Arena_VipTagChange;
 
@@ -38,10 +40,10 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
     private readonly PluginCapability<IMenuApi?> _pluginCapability = new("menu:nfcore");
     public TagConfig Config { get; set; }
 
-    public readonly Dictionary<ulong, Player?> Players = new();
+    public readonly ConcurrentDictionary<ulong, Player?> Players = new();
     public string DbConnection = string.Empty;
 
-    List<string> Colors = 
+    List<string> Colors =
         [
         "Default"," White", "DarkRed", "Green", "LightYellow", "LightBlue"," Olive", "Lime", "Red", "LightPurple", "Purple", "Grey"," Yellow", "Gold", "Silver", "Blue","DarkBlue", "BlueGrey", "Magenta", "LightRed", "Orange"
         ];
@@ -61,6 +63,7 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
     public override void Unload(bool hotReload)
     {
         Logger.LogInformation("Arena_VipTagChange - Unloaded");
+        _ = SaveAllTags();
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
@@ -164,10 +167,15 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
     }
     public async Task AddTag(CCSPlayerController player, string tag)
     {
-        var SteamID = player!.AuthorizedSteamID!.SteamId64;
-        var userExists = await UserExist(SteamID);
         try
         {
+            ulong SteamID = 0;
+            await Task.Run(() =>
+            {
+                SteamID = player.AuthorizedSteamID!.SteamId64;
+            });
+            //var SteamID = player!.AuthorizedSteamID!.SteamId64;
+            var userExists = await UserExist(SteamID);
             await using var connection = new MySqlConnection(DbConnection);
             await Task.Run(() => userExists);
             if (userExists)
@@ -176,29 +184,11 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
                 await connection.OpenAsync();
                 string sqlUpdate = "UPDATE `VipTags_Players` SET `Tag` = @tag WHERE `SteamID` = @SteamID";
                 await connection.ExecuteAsync(sqlUpdate, new { SteamID, tag });
-                /*
-                using (var cmd = new MySqlCommand(sqlUpdate, connection))
-                {
-                    cmd.Parameters.AddWithValue("@SteamID", SteamID);
-                    cmd.Parameters.AddWithValue("@Tag", tag);
-                    await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"Tag for user {SteamID} was updated!");
-                }
-                */
                 return;
             }
             await connection.OpenAsync();
             string sqlInsert = "INSERT INTO `VipTags_Players` (`SteamID`, `Tag`, `Visibility`) VALUES (@SteamID, @tag, true)";
             await connection.ExecuteAsync(sqlInsert, new { SteamID, tag });
-            /*
-            using (var cmd = new MySqlCommand(sqlInsert, connection))
-            {
-                cmd.Parameters.AddWithValue("@SteamID", SteamID);
-                cmd.Parameters.AddWithValue("@Tag", tag);
-                await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"Table VipTags_Players has been created or was already created!");
-            }
-            */
         }
         catch (Exception ex)
         {
@@ -207,6 +197,90 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
         return;
     }
 
+    public async Task SaveTags(ulong SteamID)
+    {
+        try
+        {
+            var userExists = await UserExist(SteamID);
+            await using var connection = new MySqlConnection(DbConnection);
+            await Task.Run(() => userExists);
+            var parameters = new
+            {
+                SteamID,
+                Tag = Players[SteamID]!.tag,
+                TagColor = Players[SteamID]!.tagcolor ?? null,
+                ChatColor = Players[SteamID]!.chatcolor ?? null,
+                NameColor = Players[SteamID]!.namecolor ?? null,
+                Visibility = Players[SteamID]!.visibility ?? true
+            };
+            if (userExists)
+            {
+                Logger.LogInformation($"User exists! Updating tag!");
+                await connection.OpenAsync();
+                string sqlUpdate = "UPDATE `VipTags_Players` SET `Tag` = @Tag, `TagColor` = @TagColor, `NameColor` = @NameColor, `ChatColor` = @ChatColor, `Visibility` = @Visibility WHERE `SteamID` = @SteamID";
+                await connection.ExecuteAsync(sqlUpdate, parameters);
+                return;
+            }
+            await connection.OpenAsync();
+            string sqlInsert = "INSERT INTO `VipTags_Players` (`SteamID`, `Tag`, `TagColor`, `NameColor`, `ChatColor`, `Visibility`) VALUES (@SteamID, @Tag, @TagColor, @NameColor, @ChatColor, @Visibility)";
+            await connection.ExecuteAsync(sqlInsert, parameters);
+        }
+        catch (Exception err)
+        {
+            Logger.LogInformation($"{err}");
+        }
+        return;
+    }
+
+    public async Task SaveAllTags()
+    {
+        try
+        {
+            await using var connection = new MySqlConnection(DbConnection);
+            await connection.OpenAsync();
+            foreach (var kvp in Players)
+            {
+                var steamid = kvp.Key;
+                var player = kvp.Value;
+                if (player == null) continue;
+                var userExists = await UserExist(steamid);
+                var parameters = new
+                {
+                    SteamID = steamid,
+                    Tag = player.tag,
+                    TagColor = player.tagcolor ?? null,
+                    ChatColor = player.chatcolor ?? null,
+                    NameColor = player.namecolor ?? null,
+                    Visibility = player.visibility ?? true
+                };
+                if (userExists)
+                {
+                    Logger.LogInformation($"Updating tag {steamid}");
+                    string sqlUpdate = @"
+                    UPDATE `VipTags_Players`
+                    SET `Tag` = @Tag, `TagColor` = @TagColor, `NameColor` = @NameColor, 
+                        `ChatColor` = @ChatColor, `Visibility` = @Visibility
+                    WHERE `SteamID` = @SteamID";
+                    await connection.ExecuteAsync(sqlUpdate, parameters);
+                }
+                else
+                {
+                    Logger.LogInformation($"Inserting new tag {steamid}");
+                    string sqlInsert = @"
+                    INSERT INTO `VipTags_Players` 
+                    (`SteamID`, `Tag`, `TagColor`, `NameColor`, `ChatColor`, `Visibility`) 
+                    VALUES (@SteamID, @Tag, @TagColor, @NameColor, @ChatColor, @Visibility)";
+                    await connection.ExecuteAsync(sqlInsert, parameters);
+                }
+            }
+            Logger.LogInformation($"All players have been updated / inserted into DB");
+        }
+        catch (Exception err)
+        {
+            Logger.LogInformation($"SaveAllTags - {err}");
+        }
+        return;
+    }
     public async Task ChangeColor(CCSPlayerController player, string color, int type)
     {
         var SteamID = player!.AuthorizedSteamID!.SteamId64;
@@ -233,7 +307,7 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
                 Logger.LogInformation($"User exists! Updating color - {type}!");
                 await connection.OpenAsync();
                 string sqlUpdate = $"UPDATE `VipTags_Players` SET {type1} = @color WHERE `SteamID` = @SteamID";
-                await connection.ExecuteAsync(sqlUpdate, new {color, SteamID});
+                await connection.ExecuteAsync(sqlUpdate, new { color, SteamID });
                 /*
                 using (var cmd = new MySqlCommand(sqlUpdate, connection))
                 {
@@ -283,25 +357,22 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
                         SharedApi_Tag?.SetPlayerTag(player, Tags.Tags_Tags.ChatTag, $"{{{chatcolors}}}{Players[player.AuthorizedSteamID!.SteamId64]!.tag} ");
                         player.PrintToChat($"{Localizer["Prefix"]}{{{chatcolors}}}{Localizer["NewTagColor", chatcolors]}".ReplaceColorTags());
                         Players[player.AuthorizedSteamID!.SteamId64]!.tagcolor = chatcolors;
-                        await ChangeColor(player, chatcolors, 1);
+                        //await ChangeColor(player, chatcolors, 1);
                         break;
                     case 2:
                         SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.ChatColor, $"{{{chatcolors}}}");
                         player.PrintToChat($"{Localizer["Prefix"]}{{{chatcolors}}}{Localizer["NewChatColor", chatcolors]}".ReplaceColorTags());
                         Players[player.AuthorizedSteamID!.SteamId64]!.chatcolor = chatcolors;
-                        await ChangeColor(player, chatcolors, 2);
+                        //await ChangeColor(player, chatcolors, 2);
                         break;
                     case 3:
                         SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.NameColor, $"{{{chatcolors}}}");
                         player.PrintToChat($"{Localizer["Prefix"]}{{{chatcolors}}}{Localizer["NewNameColor", chatcolors]}".ReplaceColorTags());
                         Players[player.AuthorizedSteamID!.SteamId64]!.namecolor = chatcolors;
-                        await ChangeColor(player, chatcolors, 3);
+                        //await ChangeColor(player, chatcolors, 3);
                         break;
                 }
-                //SharedApi_Tag?.SetPlayerColor(player, Tags.Tags_Colors.ChatColor, $"{{{chatcolors}}}");
                 CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
-                //string message = $"Your new color: {{{chatcolors}}}{chatcolors}";
-                //player.PrintToChat($"{message.ReplaceColorTags()}");
             });
         }
         menu?.Open(player);
@@ -332,31 +403,36 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
 
     private void OnClientAuthorized(int slot, SteamID id)
     {
+        /*
         var player = CounterStrikeSharp.API.Utilities.GetPlayerFromSlot(slot);
-        if(player == null || player.IsBot || player.IsHLTV) return;
+        if (player == null || player.IsBot || player.IsHLTV) return;
         var steamid64 = player!.AuthorizedSteamID!.SteamId64;
-        Logger.LogInformation("ONCLIENT AUTHORIZED");
+        //if (!AdminManager.PlayerHasPermissions(player, Config.VipFlag)) return;
+        Logger.LogInformation("ONCLIENT AUTHORIZED - HAS FLAG");
         Task.Run(async () =>
         {
             await OnClientAuthorizedAsync(steamid64);
         });
+        */
     }
 
-    private async Task OnClientAuthorizedAsync(ulong steamid)
+    public async Task OnClientAuthorizedAsync(ulong steamid)
     {
         var userexist = await UserExist(steamid);
-        if(!userexist) return;
+        if (!userexist) return;
         var user = await FetchPlayerInfo(steamid);
-        if(user == null) return;
+        if (user == null) return;
 
         Players[steamid] = new Player
-            {
-                steamid = user!.steamid,
-                tag = user.tag ?? "[VIP]",
-                tagcolor = user.tagcolor,
-                namecolor = user.namecolor,
-                chatcolor = user.chatcolor,
-                visibility = user.visibility ?? false
-            };
+        {
+            steamid = user!.steamid,
+            tag = user.tag,
+            tagcolor = user.tagcolor,
+            namecolor = user.namecolor,
+            chatcolor = user.chatcolor,
+            visibility = user.visibility ?? false
+        };
     }
+
+
 }
