@@ -40,7 +40,7 @@ This plugin allows to someone with specific permission to set up their own score
 ```
 
 ### [🩷] Thanks to:
-- [K4-Arenas](https://github.com/K4ryuu/K4-Arenas) for api and how to optimaze database queries so there won't be long frames,
+- [K4-Arenas](https://github.com/K4ryuu/K4-Arenas) for api and how to optimaze database queries,
 - [CS2-Tags (at least v1.1)](https://github.com/schwarper/cs2-tags) for api,
 - [CS2-Ranks](https://github.com/partiusfabaa/cs2-ranks) how to manage things such as keeping player information from database,
 - CounterStrikeSharp discord,
