@@ -108,11 +108,12 @@ public partial class Arena_VipTagChange
         });
         menu?.Open(player);
     }
-
+    /*
     [ConsoleCommand("css_tescik", "Ability for VIP to change their Scoreboard and Chat tag")]
     public async void TestCMD(CCSPlayerController? player, CommandInfo commandInfo)
     {
         var steamid = player!.AuthorizedSteamID!.SteamId64;
         Server.PrintToChatAll($"ID: {Players[steamid]}, Tag: {Players[steamid]!.tag}, TagColor: {Players[steamid]!.tagcolor}, NameColor: {Players[steamid]!.namecolor}, ChatColor: {Players[steamid]!.chatcolor}, Visibility: {Players[steamid]!.visibility}");
     }
+    */
 }

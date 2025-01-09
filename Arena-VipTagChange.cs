@@ -10,6 +10,8 @@ using MySqlConnector;
 using Dapper;
 using CounterStrikeSharp.API.Modules.Entities;
 using System.Collections.Concurrent;
+using System.Drawing;
+using CounterStrikeSharp.API.Modules.Menu;
 
 namespace Arena_VipTagChange;
 
@@ -27,7 +29,7 @@ public class TagConfig : BasePluginConfig
 public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
 {
     public override string ModuleName => "Arena_VipTagChange";
-    public override string ModuleVersion => "0.0.6";
+    public override string ModuleVersion => "0.0.7";
     public override string ModuleAuthor => "Letaryat";
     public override string ModuleDescription => "Tag change for servers using K4-Arenas";
     public static PluginCapability<IK4ArenaSharedApi> Capability_SharedAPI { get; } = new("k4-arenas:sharedapi");
@@ -331,6 +333,7 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
     {
         if (player == null) { return; }
         var menu = _api?.NewMenu("Tags menu");
+        var playerTypeMenu = _api!.GetMenuType(player);
         switch (type)
         {
             case 1:
@@ -346,7 +349,18 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
 
         foreach (var chatcolors in Colors)
         {
-            menu?.AddMenuOption($"{chatcolors}", async (player, option) =>
+            string hex = FromNameToHex(chatcolors)!;
+            string? menuOption;
+            if (playerTypeMenu == MenuType.ChatMenu || playerTypeMenu == MenuType.ConsoleMenu || playerTypeMenu == MenuType.CenterMenu)
+            {
+                menuOption = $"{{{chatcolors}}}{chatcolors}".ReplaceColorTags();
+            }
+            else
+            {
+                menuOption = $"<font color='{hex}'><b>{chatcolors}</b></font>";
+            }
+
+            menu?.AddMenuOption(menuOption, async (player, option) =>
             {
                 switch (type)
                 {
@@ -375,6 +389,33 @@ public partial class Arena_VipTagChange : BasePlugin, IPluginConfig<TagConfig>
             });
         }
         menu?.Open(player);
+    }
+
+
+    public static string? FromNameToHex(string name)
+    {
+        try
+        {
+            Dictionary<string, string> predefinedColors = new Dictionary<string, string>
+            {
+                {"Default", "#FFFFFF"},
+                {"BlueGrey", "#B1C4D9"},
+                {"Grey", "#C6CBD0"},
+                {"LightPurple", "#BB82F0"},
+                {"LightRed", "#EB4C4C"},
+            };
+            Color color = Color.FromName(name);
+            if (!color.IsKnownColor && !color.IsNamedColor) return null;
+            if (predefinedColors.ContainsKey(name))
+            {
+                return predefinedColors[name];
+            }
+            return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+        catch
+        {
+            return null;
+        }
     }
     public async Task<Player?> FetchPlayerInfo(ulong SteamID)
     {
