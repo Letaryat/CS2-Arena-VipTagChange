@@ -5,6 +5,7 @@
     <RootNamespace>Arena_VipTagChange</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
 	<ItemGroup>
